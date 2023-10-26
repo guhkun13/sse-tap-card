@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/1.8.1/flowbite.min.css"
+      rel="stylesheet"
+    />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/1.8.1/flowbite.min.js"></script>
+    <title>SSE Client</title>
+  </head>
+
+  <body>
+    <div class="bg-blue-300">
+      <div
+        class="flex flex-col items-center justify-center px-6 py-8 mx-auto md:h-screen lg:py-0"
+      >
+        <a
+          href="#"
+          class="flex items-center mb-6 text-2xl font-semibold text-gray-900 dark:text-white"
+        >
+          Card Registration
+        </a>
+
+        <!-- Section Instruction -->
+        <section class="bg-white rounded-lg" id="sectionInstruction">
+          <div class="py-8 px-4 mx-auto max-w-screen-xl sm:py-16 lg:px-6">
+            <div class="mx-auto max-w-screen-sm text-center">
+              <h2
+                class="mb-4 text-2xl tracking-tight font-extrabold leading-tight text-gray-900"
+              >
+                Please Tap Your Card
+              </h2>
+            </div>
+          </div>
+        </section>
+        <!-- Section Instruction / End -->
+
+        <!-- Section Connection Lost -->
+        <section
+          class="bg-red-500 rounded-lg text-white"
+          id="sectionConnection"
+          style="display: none"
+        >
+          <div class="py-8 px-4 mx-auto max-w-screen-xl sm:py-16 lg:px-6">
+            <div class="mx-auto max-w-screen-sm text-center">
+              <h2
+                class="mb-4 text-2xl tracking-tight font-extrabold leading-tight"
+              >
+                Application is not ready
+              </h2>
+              <p>Please check your internet connection</p>
+            </div>
+          </div>
+        </section>
+        <!-- Section Connection Lost / End-->
+
+        <!-- Section Form Input -->
+        <section id="sectionRegisterForm" style="display: none">
+          <div
+            class="bg-blue-500 w-full rounded-lg shadow md:mt-0 sm:max-w-md xl:p-0"
+          >
+            <div class="p-6 space-y-4 md:space-y-6 sm:p-8">
+              <form
+                class="space-y-4 md:space-y-6"
+                method="POST"
+                action="?/register"
+              >
+                <div>
+                  <label
+                    for="email"
+                    class="block mb-2 text-sm font-medium text-gray-900"
+                    >Card UUID (detected)</label
+                  >
+                  <input
+                    type="text"
+                    name="card_uuid"
+                    class="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5"
+                    required
+                    readonly="true"
+                    bind:value="{cardUUID}"
+                  />
+                </div>
+                <div>
+                  <label
+                    for="password"
+                    class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                    >Please Input Your NPM
+                  </label>
+                  <input
+                    type="text"
+                    name="npm"
+                    class="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5"
+                    required=""
+                    bind:value="{npm}"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  class="w-full text-white bg-red-600 hover:bg-red-700 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center"
+                >
+                  Register
+                </button>
+              </form>
+            </div>
+          </div>
+        </section>
+        <!-- Section Form Input / end -->
+      </div>
+    </div>
+
+    <p>Status Connection : <span id="sse-data"></span></p>
+
+    <script>
+      hideElementById(idSectionConnection);
+      hideElementById(idSectionRegisterForm);
+
+      var showForm = false;
+      var idSectionConnection = "sectionConnection";
+      var idSectionInstruction = "sectionInstruction";
+      var idSectionRegisterForm = "sectionRegisterForm";
+
+      const sseData = document.getElementById("sse-data");
+
+      const eventSource = new EventSource("http://localhost:8082/sse");
+
+      eventSource.addEventListener("message", (event) => {
+        console.log("incoming message");
+        const data = JSON.parse(event.data);
+        console.log(data);
+        console.log(data.type);
+        var type = data.type;
+
+        if (type == "data") {
+          showForm = true;
+        }
+
+        console.log(showForm);
+
+        if (showForm) {
+          showElementById(idSectionRegisterForm);
+
+          hideElementById(idSectionConnection);
+          hideElementById(idSectionInstruction);
+        } else if (type == "ping") {
+          showElementById(idSectionInstruction);
+
+          hideElementById(idSectionConnection);
+          hideElementById(idSectionRegisterForm);
+        } else {
+          showElementById(idSectionConnection);
+
+          hideElementById(idSectionInstruction);
+          hideElementById(idSectionRegisterForm);
+        }
+
+        sseData.innerHTML = `Connected`;
+      });
+
+      eventSource.addEventListener("error", (event) => {
+        console.error("Error occurred:", event);
+        showElementById(idSectionConnection);
+
+        hideElementById(idSectionInstruction);
+        hideElementById(idSectionRegisterForm);
+
+        sseData.innerHTML = `Connection Error`;
+      });
+
+      function hideElementById(id) {
+        var element = document.getElementById(id);
+        if (element) {
+          element.style.display = "none";
+        }
+      }
+
+      function showElementById(id) {
+        var element = document.getElementById(id);
+        if (element) {
+          element.style.display = "block";
+        }
+      }
+    </script>
+  </body>
+</html>
