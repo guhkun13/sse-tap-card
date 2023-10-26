@@ -1,3 +1,3 @@
 #!/bin/bash
 
-curl http://localhost:8082/tap-card?cardUUID=123-ABC
+curl http://localhost:8082/tap-card?cardUUID="$1"

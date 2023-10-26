@@ -62,20 +62,17 @@
             class="bg-blue-500 w-full rounded-lg shadow md:mt-0 sm:max-w-md xl:p-0"
           >
             <div class="p-6 space-y-4 md:space-y-6 sm:p-8">
-              <form
-                class="space-y-4 md:space-y-6"
-                method="POST"
-                action="?/register"
-              >
+              <form class="space-y-4 md:space-y-6" method="GET">
                 <div>
                   <label
-                    for="email"
+                    for="card-uuid"
                     class="block mb-2 text-sm font-medium text-gray-900"
                     >Card UUID (detected)</label
                   >
                   <input
                     type="text"
-                    name="card_uuid"
+                    id="id-input-card"
+                    name="card-uuid"
                     class="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5"
                     required
                     readonly="true"
@@ -121,6 +118,7 @@
       var idSectionConnection = "sectionConnection";
       var idSectionInstruction = "sectionInstruction";
       var idSectionRegisterForm = "sectionRegisterForm";
+      var idInputCard = "id-input-card";
 
       const sseData = document.getElementById("sse-data");
 
@@ -130,8 +128,9 @@
         console.log("incoming message");
         const data = JSON.parse(event.data);
         console.log(data);
-        console.log(data.type);
+
         var type = data.type;
+        var cardUUID = data.cardUUID;
 
         if (type == "data") {
           showForm = true;
@@ -141,6 +140,9 @@
 
         if (showForm) {
           showElementById(idSectionRegisterForm);
+          if (cardUUID != "") {
+            assignValue(idInputCard, cardUUID);
+          }
 
           hideElementById(idSectionConnection);
           hideElementById(idSectionInstruction);
@@ -173,6 +175,14 @@
         var element = document.getElementById(id);
         if (element) {
           element.style.display = "none";
+        }
+      }
+
+      function assignValue(id, val) {
+        console.log("assignValue", id, val);
+        var element = document.getElementById(id);
+        if (element) {
+          element.value = val;
         }
       }
 
