@@ -105,7 +105,7 @@
                 <button
                   type="submit"
                   id="submitBtn"
-                  class="w-full text-white bg-red-600 hover:bg-red-700 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center"
+                  class="w-full text-white bg-gray-500 hover:bg-red-700 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center"
                   disabled
                 >
                   Register
@@ -203,34 +203,63 @@
         }
       }
 
+      function updateResultDiv(data) {
+        var resultDiv = document.getElementById("result");
+
+        if (data.isValid && data.hasRegister) {
+          resultDiv.innerHTML = `
+            <p>Data has Registered! </p>
+            <p>Name: ${data.data.Name}</p>
+            <p>Card ID: ${data.data.CardId}</p>
+            <p>Faculty: ${data.data.Faculty}</p>
+            <p>Org Code: ${data.data.OrgCode}</p>            
+        `;
+        } else {
+          resultDiv.innerHTML = `
+            <p>Data Found:</p>
+            <p>Name: ${data.data.Name}</p>
+            <p>Card ID: ${data.data.CardId}</p>
+            <p>Faculty: ${data.data.Faculty}</p>
+            <p>Org Code: ${data.data.OrgCode}</p>
+        `;
+        }
+      }
+
+      function disableSubmitBtn(status) {
+        var submitBtn = document.getElementById("submitBtn");
+
+        if (status) {
+          submitBtn.disabled = true;
+          submitBtn.classList.remove("bg-red-500");
+          submitBtn.classList.add("bg-gray-500");
+        } else {
+          submitBtn.disabled = false;
+          submitBtn.classList.remove("bg-gray-500");
+          submitBtn.classList.add("bg-red-500");
+        }
+      }
+
       document
         .getElementById("getNpmButton")
         .addEventListener("click", function () {
           var npmValue = document.getElementById("npmInput").value;
-          var resultDiv = document.getElementById("result");
+
           // Make a request to the API endpoint
           fetch("http://localhost:8082/get-card/" + npmValue)
             .then((response) => response.json())
             .then((data) => {
-              if (data.isValid) {
-                alert("NPM is valid!");
-                // Show the data below the check button
-
-                resultDiv.innerHTML = `
-                    <p>Data Found:</p>
-                    <p>Name: ${data.data.Name}</p>
-                    <p>Card ID: ${data.data.CardId}</p>
-                    <p>Faculty: ${data.data.Faculty}</p>
-                    <p>Org Code: ${data.data.OrgCode}</p>
-                `;
-
-                // Enable the submit button
-                document.getElementById("submitBtn").disabled = false;
+              if (data.isValid && data.hasRegister) {
+                alert("NPM is valid but has registered");
+                updateResultDiv(data);
+                disableSubmitBtn(true);
+              } else if (data.isValid) {
+                alert("NPM is valid & has not registered");
+                updateResultDiv(data);
+                disableSubmitBtn(false);
               } else {
                 alert("NPM is not valid!");
-                // Show error message and disable the submit button
                 resultDiv.innerHTML = `<p>Data Not Found</p>`;
-                document.getElementById("submitBtn").disabled = true;
+                disableSubmitBtn(true);
               }
             })
             .catch((error) => console.error("Error:", error));

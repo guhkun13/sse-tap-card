@@ -35,10 +35,22 @@ type CardData struct {
 	OrgCode string
 }
 
+type CardResponse struct {
+	IsValid     bool        `json:"isValid"`
+	HasRegister bool        `json:"hasRegister"`
+	Data        interface{} `json:"data"`
+}
+
 var cardList = []CardData{
 	{Name: "Abdul Amin", CardId: "123", Faculty: "Engineering", OrgCode: "E001"},
 	{Name: "Budi Anduk", CardId: "456", Faculty: "Science", OrgCode: "S002"},
 	{Name: "Dodit", CardId: "789", Faculty: "Law", OrgCode: "L012"},
+	{Name: "Radit", CardId: "111", Faculty: "Computer Science", OrgCode: "CS002"},
+	{Name: "Kevin", CardId: "222", Faculty: "Math", OrgCode: "M001"},
+}
+
+var registeredCardList = []CardData{
+	{Name: "Abdul Amin", CardId: "123", Faculty: "Engineering", OrgCode: "E001"},
 	{Name: "Radit", CardId: "111", Faculty: "Computer Science", OrgCode: "CS002"},
 }
 
@@ -97,8 +109,38 @@ func getCardHandler(w http.ResponseWriter, r *http.Request) {
 	cardId := chi.URLParam(r, "id")
 	fmt.Println("getCardHandler", cardId)
 
-	var cardData interface{}
+	// validate npm exist
+	cardData := getCardById(cardId)
+	if cardData == nil {
+		fmt.Println("case 1: Card not exist")
+		returnResponse(w, CardResponse{
+			IsValid:     false,
+			HasRegister: false,
+			Data:        cardData,
+		})
+		return
+	}
 
+	registeredCard := getRegisteredCardById(cardId)
+	if registeredCard != nil {
+		fmt.Println("case 2: Card has registered")
+		returnResponse(w, CardResponse{
+			IsValid:     true,
+			HasRegister: true,
+			Data:        registeredCard,
+		})
+		return
+	}
+
+	fmt.Println("case 3: Card valid")
+	returnResponse(w, CardResponse{
+		IsValid:     true,
+		HasRegister: false,
+		Data:        cardData,
+	})
+}
+
+func getCardById(cardId string) (cardData interface{}) {
 	for _, card := range cardList {
 		if card.CardId == cardId {
 			cardData = card
@@ -106,9 +148,27 @@ func getCardHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	return cardData
+}
+
+func getRegisteredCardById(cardId string) (cardData interface{}) {
+	for _, card := range registeredCardList {
+		if card.CardId == cardId {
+			cardData = card
+			break
+		}
+	}
+
+	return cardData
+}
+
+func returnResponse(w http.ResponseWriter, cardReponse CardResponse) {
+	fmt.Println("return response")
+
 	response := map[string]interface{}{
-		"isValid": cardData != nil,
-		"data":    cardData,
+		"isValid":     cardReponse.IsValid,
+		"hasRegister": cardReponse.HasRegister,
+		"data":        cardReponse.Data,
 	}
 
 	w.Header().Set("Cache-Control", "no-cache")
