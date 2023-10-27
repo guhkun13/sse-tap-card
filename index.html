@@ -76,7 +76,6 @@
                     class="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5"
                     required
                     readonly="true"
-                    bind:value="{cardUUID}"
                   />
                 </div>
                 <div>
@@ -88,15 +87,26 @@
                   <input
                     type="text"
                     name="npm"
+                    id="npmInput"
                     class="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5"
                     required=""
-                    bind:value="{npm}"
                   />
+                  <button
+                    class="px-2 py-1 bg-blue-200 mt-1 rounded-md"
+                    type="button"
+                    id="getNpmButton"
+                  >
+                    Check NPM
+                  </button>
                 </div>
+
+                <div id="result"></div>
 
                 <button
                   type="submit"
+                  id="submitBtn"
                   class="w-full text-white bg-red-600 hover:bg-red-700 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center"
+                  disabled
                 >
                   Register
                 </button>
@@ -192,6 +202,39 @@
           element.style.display = "block";
         }
       }
+
+      document
+        .getElementById("getNpmButton")
+        .addEventListener("click", function () {
+          var npmValue = document.getElementById("npmInput").value;
+          var resultDiv = document.getElementById("result");
+          // Make a request to the API endpoint
+          fetch("http://localhost:8082/get-card/" + npmValue)
+            .then((response) => response.json())
+            .then((data) => {
+              if (data.isValid) {
+                alert("NPM is valid!");
+                // Show the data below the check button
+
+                resultDiv.innerHTML = `
+                    <p>Data Found:</p>
+                    <p>Name: ${data.data.Name}</p>
+                    <p>Card ID: ${data.data.CardId}</p>
+                    <p>Faculty: ${data.data.Faculty}</p>
+                    <p>Org Code: ${data.data.OrgCode}</p>
+                `;
+
+                // Enable the submit button
+                document.getElementById("submitBtn").disabled = false;
+              } else {
+                alert("NPM is not valid!");
+                // Show error message and disable the submit button
+                resultDiv.innerHTML = `<p>Data Not Found</p>`;
+                document.getElementById("submitBtn").disabled = true;
+              }
+            })
+            .catch((error) => console.error("Error:", error));
+        });
     </script>
   </body>
 </html>

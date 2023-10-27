@@ -5,8 +5,11 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
+
+	"github.com/go-chi/chi"
 )
 
 const CONST_CARD_UUID = "CARD-UUID"
@@ -14,6 +17,8 @@ const CONST_NPM = "NPM"
 
 const MessageTypePing = "ping"
 const MessageTypeData = "data"
+
+var globalChan chan string
 
 type Message struct {
 	Type     string `json:"type"`
@@ -23,7 +28,19 @@ type Message struct {
 
 }
 
-var globalChan chan string
+type CardData struct {
+	Name    string
+	CardId  string
+	Faculty string
+	OrgCode string
+}
+
+var cardList = []CardData{
+	{Name: "Abdul Amin", CardId: "123", Faculty: "Engineering", OrgCode: "E001"},
+	{Name: "Budi Anduk", CardId: "456", Faculty: "Science", OrgCode: "S002"},
+	{Name: "Dodit", CardId: "789", Faculty: "Law", OrgCode: "L012"},
+	{Name: "Radit", CardId: "111", Faculty: "Computer Science", OrgCode: "CS002"},
+}
 
 func handleSSE(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/event-stream")
@@ -39,6 +56,7 @@ func handleSSE(w http.ResponseWriter, r *http.Request) {
 	for {
 		select {
 		case cardUUID := <-globalChan:
+			fmt.Println("send data to client")
 			msg := Message{
 				Type:     MessageTypeData,
 				Text:     CONST_CARD_UUID,
@@ -66,21 +84,51 @@ func handleSSE(w http.ResponseWriter, r *http.Request) {
 
 func handleTapCard(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("handleTapCard!")
-	cardUUID := r.URL.Query().Get("cardUUID")
+	cardUUID := chi.URLParam(r, "id")
+	fmt.Println(cardUUID)
 	if cardUUID != "" {
+		fmt.Println("assign to globalChan")
 		globalChan <- cardUUID
 	}
 }
 
-func main() {
+func getCardHandler(w http.ResponseWriter, r *http.Request) {
 
+	cardId := chi.URLParam(r, "id")
+	fmt.Println("getCardHandler", cardId)
+
+	var cardData interface{}
+
+	for _, card := range cardList {
+		if card.CardId == cardId {
+			cardData = card
+			break
+		}
+	}
+
+	response := map[string]interface{}{
+		"isValid": cardData != nil,
+		"data":    cardData,
+	}
+
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+func main() {
 	// make global channel
 	globalChan = make(chan string)
 
-	// define handler
-	http.HandleFunc("/sse", handleSSE)
-	http.HandleFunc("/tap-card", handleTapCard)
+	r := chi.NewRouter()
+	r.Get("/sse", handleSSE)
+	r.Get("/tap-card/{id}", handleTapCard)
+	r.Get("/get-card/{id}", getCardHandler)
 
 	fmt.Println("Server started on :8082")
-	http.ListenAndServe(":8082", nil)
+	err := http.ListenAndServe(":8082", r)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
